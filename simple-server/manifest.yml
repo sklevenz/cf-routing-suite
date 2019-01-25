@@ -1,0 +1,6 @@
+ ---
+applications:
+  - name: simple-server
+    instances: 1
+    memory: 64MB
+    host: simple-server-skl
