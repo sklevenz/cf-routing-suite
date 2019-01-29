@@ -19,22 +19,31 @@ type responseDataStruct struct {
 	CfApplicationId string `json:"cf-applicationid"`
 }
 
-var count uint64 = 0
-var count_mutex sync.Mutex
+type versionStruct struct {
+	Version string
+	Commit  string
+	Date    string
+}
+
+var (
+	count       uint64 = 0
+	count_mutex sync.Mutex
+
+	// filled by go build -ldflags="-X main.versionFlag=1.0 ..." or goreleaser
+	versionFlag string = "snapshot"
+	commitFlag  string = "n/a"
+	dateFlag    string = "n/a"
+
+	version versionStruct
+)
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("filepath: %v",filepath.Clean(r.URL.Path))
-
 	lp := filepath.Join("template", "layout.html")
 	fp := filepath.Join("template", filepath.Clean(r.URL.Path))
-
-	log.Printf("fp: %v",fp)
 
 	if fp == "template" {
 		fp = "template/index.html"
 	}
-
-	log.Printf("fp: %v",fp)
 
 	// Return a 404 if the template doesn't exist
 	info, err := os.Stat(fp)
@@ -60,12 +69,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "layout", nil); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "layout", version); err != nil {
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(500), 500)
 	}
 }
-
 
 func incHandler(w http.ResponseWriter, r *http.Request) {
 	incCounter()
@@ -109,6 +117,8 @@ func resetCounter() {
 }
 
 func main() {
+	version = versionStruct{versionFlag, commitFlag, dateFlag}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -120,6 +130,7 @@ func main() {
 	http.HandleFunc("/", rootHandler)
 
 	log.Printf("Server running on http://localhost:%s ...\n", port)
+	log.Printf("version: %v", version)
 	err := http.ListenAndServe(fmt.Sprintf(":"+port), nil)
 	log.Fatal(err)
 }

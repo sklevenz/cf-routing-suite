@@ -1,0 +1,39 @@
+project_name: cf-routing-suite
+builds:
+- goos:
+  - linux
+  - darwin
+  - windows
+  goarch:
+  - amd64
+  main: server.go
+  binary: server
+  ldflags: -s -w -X main.versionFlag={{.Version}} -X main.commitFlag={{.Commit}} -X main.dateFlag={{.Date}}
+archive:
+  format: tar.gz
+  replacements:
+    amd64: 64-bit
+    darwin: macOS
+    linux: Tux
+  files:
+  - README*
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+
+release:
+  draft: false
+  github:
+    owner: sklevenz
+    name: cf-routing-suite
+
+brew:
+  folder: Formula
+  homepage: "https://github.com/sklevenz/cf-routing-suite/"
+  description: "A command line toolset to manage CF landscapes."
+  test: |
+    # system "#{bin}/cf-routing-suite --version"
+  install: |
+    bin.install "cf-routing-suite"
+  github:
+    owner: sklevenz
+    name: hombrew-skl
