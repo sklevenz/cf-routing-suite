@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -19,22 +20,13 @@ type responseDataStruct struct {
 	CfApplicationId string `json:"cf-applicationid"`
 }
 
-type versionStruct struct {
-	Version string
-	Commit  string
-	Date    string
-}
-
 var (
 	count       uint64 = 0
 	count_mutex sync.Mutex
 
-	// filled by go build -ldflags="-X main.versionFlag=1.0 ..." or goreleaser
-	versionFlag string = "snapshot"
-	commitFlag  string = "n/a"
-	dateFlag    string = "n/a"
-
-	version versionStruct
+	// filled by go build -ldflags="-X main.versionFlag=1.0" or goreleaser
+	version string = "snapshot"
+	showVersion = *flag.Bool("version", false, "show version info only")
 )
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +52,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFiles(lp, fp)
+	rootTemplate, err := template.ParseFiles(lp, fp)
 	if err != nil {
 		// Log the detailed error
 		log.Println(err.Error())
@@ -69,7 +61,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := tmpl.ExecuteTemplate(w, "layout", version); err != nil {
+	data := struct { // add data to the template
+		Version string
+	}{version}
+
+	if err := rootTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(500), 500)
 	}
@@ -117,7 +113,11 @@ func resetCounter() {
 }
 
 func main() {
-	version = versionStruct{versionFlag, commitFlag, dateFlag}
+	if showVersion {
+		log.Printf("version: %v", version)
+		os.Exit(0)
+	}
+
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -128,6 +128,7 @@ func main() {
 	http.HandleFunc("/reset", resetHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/", rootHandler)
+
 
 	log.Printf("Server running on http://localhost:%s ...\n", port)
 	log.Printf("version: %v", version)

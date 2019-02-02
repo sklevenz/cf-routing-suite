@@ -8,7 +8,7 @@ builds:
   - amd64
   main: server.go
   binary: server
-  ldflags: -s -w -X main.versionFlag={{.Version}} -X main.commitFlag={{.Commit}} -X main.dateFlag={{.Date}}
+  ldflags: -s -w -X main.versionFlag={{.Version}}
 archive:
   format: tar.gz
   replacements:
@@ -31,7 +31,7 @@ brew:
   homepage: "https://github.com/sklevenz/cf-routing-suite/"
   description: "A command line toolset to manage CF landscapes."
   test: |
-    # system "#{bin}/cf-routing-suite --version"
+    system "#{bin}/cf-routing-suite version"
   install: |
     bin.install "cf-routing-suite"
   github:
