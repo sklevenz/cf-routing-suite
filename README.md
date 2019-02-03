@@ -1,10 +1,10 @@
-# cf-routing-suite
-A suite containing servers and clients for chalenging the cloud foundry routing tier
+# cf-routing-suite (cfrs)
+A suite containing servers and clients for challenging the cloud foundry routing tier
 
-## simple server
+## cfrs-server
 
-[readme](./simple-server/README.md)
+[readme](./cfrs-server/README.md)
 
-## simple client
+## cfrs-client
 
-[readme](./simple-client/README.md)
+[readme](cfrs-client/README.md)

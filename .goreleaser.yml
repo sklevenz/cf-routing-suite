@@ -6,8 +6,8 @@ builds:
   - windows
   goarch:
   - amd64
-  main: server.go
-  binary: server
+  main: cfrs-server.go
+  binary: cfrs-server
   ldflags: -s -w -X main.versionFlag={{.Version}}
 archive:
   format: tar.gz
@@ -29,7 +29,7 @@ release:
 brew:
   folder: Formula
   homepage: "https://github.com/sklevenz/cf-routing-suite/"
-  description: "A command line toolset to manage CF landscapes."
+  description: "A suite containing servers and clients for challenging the cloud foundry routing tier."
   test: |
     system "#{bin}/cf-routing-suite version"
   install: |
