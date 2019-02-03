@@ -24,7 +24,7 @@ var (
 	count       uint64 = 0
 	count_mutex sync.Mutex
 
-	// filled by go build -ldflags="-X main.versionFlag=1.0" or goreleaser
+	// filled by go build -ldflags="-X main.version=1.0" or goreleaser
 	version string = "snapshot"
 	port    string = os.Getenv("PORT")
 )

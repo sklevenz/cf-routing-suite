@@ -1,20 +1,25 @@
 project_name: cf-routing-suite
 builds:
-- goos:
-  - linux
-  - darwin
-  - windows
-  goarch:
-  - amd64
-
-  build:
-    binaries:
-    - main: cfrs-server/cfrs-server.go
-      binary: cfrs-server
-      ldflags: -s -w -X main.versionFlag={{.Version}}
-    - main: cfrs-cient/cfrs-client.go
-      binary: cfrs-client
-      ldflags: -s -w -X main.versionFlag={{.Version}}
+  -
+    main: cfrs-server/main.go
+    binary: cfrs-server
+    ldflags: -s -w -X main.version={{.Version}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+    - amd64
+  -
+    main: cfrs-client/main.go
+    binary: cfrs-client
+    ldflags: -s -w -X main.version={{.Version}}
+    goos:
+    - linux
+    - darwin
+    - windows
+    goarch:
+    - amd64
 archive:
   format: tar.gz
   replacements:
@@ -22,24 +27,31 @@ archive:
     darwin: macOS
     linux: Tux
   files:
-  - README*
+  - README.md
+  - LICENSE
+  - cfrs-server/static/*
+  - cfrs-server/templates/*
+
+
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
 
 release:
-  draft: true
+  draft: false
   github:
     owner: sklevenz
     name: cf-routing-suite
 
+# brew doesn't make sense for the server, because of web resources are missing
 #brew:
 #  folder: Formula
 #  homepage: "https://github.com/sklevenz/cf-routing-suite/"
 #  description: "A suite containing servers and clients for challenging the cloud foundry routing tier."
 #  test: |
-#    system "#{bin}/cf-routing-suite version"
+#    system "#{bin}/cf-routing-suite/cfrs-client/cfrs-client -version"
 #  install: |
-#    bin.install "cf-routing-suite"
+#    bin.install "cfrs-client"
+#    bin.install "cfrs-server"
 #  github:
 #    owner: sklevenz
 #    name: hombrew-skl

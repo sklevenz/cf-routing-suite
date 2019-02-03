@@ -10,10 +10,8 @@ if [ "$VERSION" == "" ]; then
     exit 0
 fi
 
-git push --delete origin "$VERSION"
-git tag -d "$VERSION"
+#git tag -a "$VERSION" -m "new release version: $VERSION"
+#git push origin "$VERSION"
 
-git tag -a "$VERSION" -m "new release version: $VERSION"
-git push origin "$VERSION"
+goreleaser --rm-dist --snapshot
 
-goreleaser --rm-dist
