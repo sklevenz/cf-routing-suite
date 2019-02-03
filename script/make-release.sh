@@ -15,4 +15,5 @@ git tag -d "$VERSION"
 
 git tag -a "$VERSION" -m "new release version: $VERSION"
 git push origin "$VERSION"
+
 goreleaser --rm-dist

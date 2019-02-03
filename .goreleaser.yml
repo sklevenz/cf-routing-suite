@@ -6,9 +6,15 @@ builds:
   - windows
   goarch:
   - amd64
-  main: cfrs-server.go
-  binary: cfrs-server
-  ldflags: -s -w -X main.versionFlag={{.Version}}
+
+  build:
+    binaries:
+    - main: cfrs-server/cfrs-server.go
+      binary: cfrs-server
+      ldflags: -s -w -X main.versionFlag={{.Version}}
+    - main: cfrs-cient/cfrs-client.go
+      binary: cfrs-client
+      ldflags: -s -w -X main.versionFlag={{.Version}}
 archive:
   format: tar.gz
   replacements:
@@ -21,19 +27,19 @@ checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
 
 release:
-  draft: false
+  draft: true
   github:
     owner: sklevenz
     name: cf-routing-suite
 
-brew:
-  folder: Formula
-  homepage: "https://github.com/sklevenz/cf-routing-suite/"
-  description: "A suite containing servers and clients for challenging the cloud foundry routing tier."
-  test: |
-    system "#{bin}/cf-routing-suite version"
-  install: |
-    bin.install "cf-routing-suite"
-  github:
-    owner: sklevenz
-    name: hombrew-skl
+#brew:
+#  folder: Formula
+#  homepage: "https://github.com/sklevenz/cf-routing-suite/"
+#  description: "A suite containing servers and clients for challenging the cloud foundry routing tier."
+#  test: |
+#    system "#{bin}/cf-routing-suite version"
+#  install: |
+#    bin.install "cf-routing-suite"
+#  github:
+#    owner: sklevenz
+#    name: hombrew-skl

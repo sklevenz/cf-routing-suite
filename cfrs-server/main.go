@@ -26,7 +26,7 @@ var (
 
 	// filled by go build -ldflags="-X main.versionFlag=1.0" or goreleaser
 	version string = "snapshot"
-	showVersion = *flag.Bool("version", false, "show version info only")
+	port    string = os.Getenv("PORT")
 )
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -113,25 +113,38 @@ func resetCounter() {
 }
 
 func main() {
-	if showVersion {
-		log.Printf("version: %v", version)
-		os.Exit(0)
-	}
-
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
+	handleFlags()
 
 	http.HandleFunc("/inc", incHandler)
 	http.HandleFunc("/reset", resetHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/", rootHandler)
 
-
 	log.Printf("Server running on http://localhost:%s ...\n", port)
 	log.Printf("version: %v", version)
 	err := http.ListenAndServe(fmt.Sprintf(":"+port), nil)
 	log.Fatal(err)
+}
+
+func handleFlags() {
+	showVersionPtr := flag.Bool("version", false, "show version info only")
+	showHelpPtr := flag.Bool("help", false, "show help")
+	showHelp2Ptr := flag.Bool("?", false, "show help")
+	portPtr := flag.String("port", "8080", "set server port")
+
+	flag.Parse()
+
+	if *showHelpPtr || *showHelp2Ptr {
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+
+	if *showVersionPtr {
+		log.Printf("version: %v", version)
+		os.Exit(0)
+	}
+
+	if port == "" {
+		port = *portPtr
+	}
 }
