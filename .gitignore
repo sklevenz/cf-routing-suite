@@ -2,3 +2,4 @@
 cfrs-server/cfrs-server
 cfrs-client/cfrs-client
 dist/
+gen/
