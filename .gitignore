@@ -2,3 +2,5 @@
 cfrs-server/cfrs-server
 cfrs-client/cfrs-client
 dist/
+/cfrs-server/mongo/data
+
