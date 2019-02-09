@@ -5,5 +5,5 @@ applications:
     memory: 64MB
     host: cfrs-server-skl
     env:
-      GO_LINKER_SYMBOL: Version
-      GO_LINKER_VALUE: snapshot
+      GO_LINKER_SYMBOL: main.version
+      GO_LINKER_VALUE: "{{VERSION}}"

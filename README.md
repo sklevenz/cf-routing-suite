@@ -56,6 +56,7 @@ Shel scripts are located in script directory. Simply call ````/script/script-nam
 | Script | Description |
 |--------|-------------|
 | ```build.sh``` | build all go binaries |
+| ```cf-push-server.sh``` | push server to cloud foundry |
 | ```delete-tag.sh``` | delete a tag from github (local and remote) |
 | ```make-release.sh``` | Make a new release by [goreleaser](https://goreleaser.com), set a version tag and push release to github |
 | ```run-client.sh``` | run the client |
