@@ -12,6 +12,7 @@ var (
 )
 
 func main() {
+	log.Print("CF-Routing-Suite Client")
 	handleFlags()
 
 	log.Printf("cfrs-client running")
@@ -20,7 +21,7 @@ func main() {
 }
 
 func handleFlags() {
-	showVersionPtr := flag.Bool("version", false, "show version info only")
+	showVersionPtr := flag.Bool("v", false, "show version info only")
 	showHelpPtr := flag.Bool("help", false, "show help")
 	showHelp2Ptr := flag.Bool("?", false, "show help")
 

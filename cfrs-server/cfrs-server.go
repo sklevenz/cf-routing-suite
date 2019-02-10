@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/sklevenz/cf-routing-suite/cfrs-server/mongo"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync"
 )
 
 type responseDataStruct struct {
@@ -20,13 +20,16 @@ type responseDataStruct struct {
 	CfApplicationId string `json:"cf-applicationid"`
 }
 
-var (
-	count       uint64 = 0
-	count_mutex sync.Mutex
+const (
+	simulator = "simulator"
+	mongodb   = "mongodb"
+)
 
+var (
 	// filled by go build -ldflags="-X main.version=1.0" or goreleaser
 	version string = "snapshot"
 	port    string = os.Getenv("PORT")
+	mode           = simulator
 )
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +75,9 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func incHandler(w http.ResponseWriter, r *http.Request) {
-	incCounter()
+	query := createQuery()
+	query.IncRequestCounter()
+	count := query.GetRequestCounter()
 	responseData := responseDataStruct{
 		count,
 		"/inc",
@@ -87,9 +92,10 @@ func incHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func resetHandler(w http.ResponseWriter, r *http.Request) {
-	resetCounter()
+	query := createQuery()
+	query.ResetRequestCounter()
 	responseData := responseDataStruct{
-		count,
+		0,
 		"/reset",
 		r.Header.Get("x-cf-instanceindex"),
 		r.Header.Get("x-cf-instanceid"),
@@ -100,20 +106,22 @@ func resetHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("responseData: %v", responseData)
 }
 
-func incCounter() {
-	count_mutex.Lock()
-	count++
-	count_mutex.Unlock()
-}
-
-func resetCounter() {
-	count_mutex.Lock()
-	count = 0
-	count_mutex.Unlock()
+func createQuery() mongo.MongoDBQuery {
+	if mode == simulator {
+		return mongo.CreateSimulator()
+	}
+	if mode == mongodb {
+		return mongo.Create()
+	}
+	log.Fatalf("Unsupported mode: %v", mode)
+	os.Exit(-1)
+	return nil
 }
 
 func main() {
+	log.Print("CF-Routing-Suite Server")
 	handleFlags()
+	log.Printf("Server mode: %v", mode)
 
 	http.HandleFunc("/inc", incHandler)
 	http.HandleFunc("/reset", resetHandler)
@@ -122,15 +130,19 @@ func main() {
 
 	log.Printf("Server running on http://localhost:%s ...\n", port)
 	log.Printf("version: %v", version)
+
+	createQuery()
+
 	err := http.ListenAndServe(fmt.Sprintf(":"+port), nil)
 	log.Fatal(err)
 }
 
 func handleFlags() {
-	showVersionPtr := flag.Bool("version", false, "show version info only")
+	simulatorPtr := flag.Bool("s", false, "run server in mongodb simulation mode")
+	showVersionPtr := flag.Bool("v", false, "show version info only")
 	showHelpPtr := flag.Bool("help", false, "show help")
 	showHelp2Ptr := flag.Bool("?", false, "show help")
-	portPtr := flag.String("port", "8080", "set server port")
+	portPtr := flag.String("p", "8080", "set server port")
 
 	flag.Parse()
 
@@ -146,5 +158,11 @@ func handleFlags() {
 
 	if port == "" {
 		port = *portPtr
+	}
+
+	if *simulatorPtr {
+		mode = simulator
+	} else {
+		mode = mongodb
 	}
 }
