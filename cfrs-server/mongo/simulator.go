@@ -1,14 +1,24 @@
 package mongo
 
-import "sync"
+import (
+	"log"
+	"sync"
+)
 
 type simulator struct {
 	requestCounter uint64
 	mutex          *sync.Mutex
 }
 
+var query MongoDBQuery
+
 func CreateSimulator() MongoDBQuery {
-	return &simulator{0, &sync.Mutex{}}
+	if (query == nil) {
+		query = &simulator{0, &sync.Mutex{}}
+	}
+
+	log.Printf("MongoDB connected: %v", query.GetMode())
+	return query
 }
 
 func (sim *simulator) GetMode() string {

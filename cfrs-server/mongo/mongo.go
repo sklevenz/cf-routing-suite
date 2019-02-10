@@ -53,7 +53,7 @@ func Create() MongoDBQuery {
 
 	q := mongodb{client: client}
 	query := &q
-	log.Printf("MongoDB connected!")
+	log.Printf("MongoDB connected: %v", client.ConnectionString())
 
 	return query
 }

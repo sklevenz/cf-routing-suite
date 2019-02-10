@@ -119,8 +119,9 @@ func createQuery() mongo.MongoDBQuery {
 }
 
 func main() {
+	log.Print("CF-Routing-Suite Server")
 	handleFlags()
-	log.Printf("CF-Routing-Suite Server (%v)", mode)
+	log.Printf("Server mode: %v", mode)
 
 	http.HandleFunc("/inc", incHandler)
 	http.HandleFunc("/reset", resetHandler)
@@ -130,17 +131,18 @@ func main() {
 	log.Printf("Server running on http://localhost:%s ...\n", port)
 	log.Printf("version: %v", version)
 
+	createQuery()
+
 	err := http.ListenAndServe(fmt.Sprintf(":"+port), nil)
 	log.Fatal(err)
 }
 
 func handleFlags() {
-	simulatorPtr := flag.Bool("simulator", false, "run server in mongodb simulation mode")
-
-	showVersionPtr := flag.Bool("version", false, "show version info only")
+	simulatorPtr := flag.Bool("s", false, "run server in mongodb simulation mode")
+	showVersionPtr := flag.Bool("v", false, "show version info only")
 	showHelpPtr := flag.Bool("help", false, "show help")
 	showHelp2Ptr := flag.Bool("?", false, "show help")
-	portPtr := flag.String("port", "8080", "set server port")
+	portPtr := flag.String("p", "8080", "set server port")
 
 	flag.Parse()
 
