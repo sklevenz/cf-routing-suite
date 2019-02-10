@@ -12,6 +12,7 @@ var (
 )
 
 func main() {
+	log.Print("CF-Routing-Suite Client")
 	handleFlags()
 
 	log.Printf("cfrs-client running")

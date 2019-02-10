@@ -31,12 +31,12 @@ popd
 
 - ~~add version~~
 - ~~add unit test~~
-- add version to cf push process
+- ~~add version to cf push process~~
 - ~~rename server.go~~
 - ~~add go releaser~~
 - add ci
 - add blue/green deployment
-- add mongodb persistence local
+- ~~add mongodb persistence local~~~
 - add mongodb persistence service
 
 
@@ -60,6 +60,7 @@ Shel scripts are located in script directory. Simply call ````/script/script-nam
 | ```delete-tag.sh``` | delete a tag from github (local and remote) |
 | ```make-release.sh``` | Make a new release by [goreleaser](https://goreleaser.com), set a version tag and push release to github |
 | ```run-client.sh``` | run the client |
+| ```run-mongo.sh``` | run a mongo db for local testing |
 | ```run-server.sh``` | run the server |
 | ```test.sh``` | run all go tests |
 
