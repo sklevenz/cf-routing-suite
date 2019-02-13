@@ -7,3 +7,4 @@ applications:
     env:
       GO_LINKER_SYMBOL: main.version
       GO_LINKER_VALUE: "{{VERSION}}"
+      MODE: "{{MODE}}"
