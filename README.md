@@ -3,29 +3,27 @@ A suite containing servers and clients for challenging the cloud foundry routing
 
 ## cfrs-server
 
-A a web server written in go. 
+The server can run locally on a given port or it can be pushed to cloud foundry.
 
-### Push it to cloud foundry:
+### simulator vs. mongodb
 
-```
-cf push
-curl -sS https://cfrs-server-skl.cfapps.sap.hana.ondemand.com/
-```
+The server can run in simulation mode or it can connect to a mongodb database. 
+The simulator is for testing and rapid development. 
+If the server runs locally then it can connect to a local running mongodb (localhost with fixed port).
+If the server is pushed to cloud foundry then it can connect to mongodb backing service via service binding. 
 
-### Build Locally
+The server is controlled by following environment variables:
 
-#### Build Server
+| Variable | Port |
+|----------|------|
+| PORT | port the service is listening to |
+| MODE | the mode can be simulator or mongodb |
 
-```
-pushd server
-  go test
-  go build
-  
-  # alternatively
-  go run cfrs-server.go
-  curl -sS http://localhost:8080/ 
-popd
-```
+
+
+
+### db mode
+
 
 #### TODO
 
@@ -37,8 +35,8 @@ popd
 - add ci
 - add blue/green deployment
 - ~~add mongodb persistence local~~~
-- add mongodb persistence service
-
+- add mongodb persistence cf service
+- ~~replace flags by env only~~
 
 
 ### API
@@ -56,11 +54,11 @@ Shel scripts are located in script directory. Simply call ````/script/script-nam
 | Script | Description |
 |--------|-------------|
 | ```build.sh``` | build all go binaries |
-| ```cf-push-server.sh``` | push server to cloud foundry |
+| ```cf-push-server.sh [s|db]``` | push server to cloud foundry (s: use database simulator, db: connect to mongodb)|
 | ```delete-tag.sh``` | delete a tag from github (local and remote) |
 | ```make-release.sh``` | Make a new release by [goreleaser](https://goreleaser.com), set a version tag and push release to github |
 | ```run-client.sh``` | run the client |
 | ```run-mongo.sh``` | run a mongo db for local testing |
-| ```run-server.sh``` | run the server |
-| ```test.sh``` | run all go tests |
+| ```run-server.sh [s|db] [8080]``` | run the server locally (s | use database simulator, db: connect ot mongodb
+| ```test.sh``` | run all go tests (uses local mongodb if available |
 

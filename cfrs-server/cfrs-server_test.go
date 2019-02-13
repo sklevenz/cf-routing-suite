@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+func init() {
+	mode=simulator
+}
+
 func TestRootHandler(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {

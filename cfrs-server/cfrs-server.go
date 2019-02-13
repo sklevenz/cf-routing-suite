@@ -23,13 +23,16 @@ type responseDataStruct struct {
 const (
 	simulator = "simulator"
 	mongodb   = "mongodb"
+
+	envDbMode = "MODE"
+	envPort    = "PORT"
 )
 
 var (
 	// filled by go build -ldflags="-X main.version=1.0" or goreleaser
-	version string = "snapshot"
-	port    string = os.Getenv("PORT")
-	mode           = simulator
+	version = "snapshot"
+	port    string
+	mode    string
 )
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +69,8 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct { // add data to the template
 		Version string
-	}{version}
+		Mode string
+	}{version, mode}
 
 	if err := rootTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 		log.Println(err.Error())
@@ -85,7 +89,12 @@ func incHandler(w http.ResponseWriter, r *http.Request) {
 		r.Header.Get("x-cf-instanceid"),
 		r.Header.Get("x-cf-applicationid")}
 
-	json.NewEncoder(w).Encode(responseData)
+	err := json.NewEncoder(w).Encode(responseData)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Error in incHandler: %v", err)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	log.Printf("responseData: %v", responseData)
@@ -101,7 +110,12 @@ func resetHandler(w http.ResponseWriter, r *http.Request) {
 		r.Header.Get("x-cf-instanceid"),
 		r.Header.Get("x-cf-applicationid")}
 
-	json.NewEncoder(w).Encode(responseData)
+	err := json.NewEncoder(w).Encode(responseData)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Error in resetHandler: %v", err)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	log.Printf("responseData: %v", responseData)
 }
@@ -113,40 +127,52 @@ func createQuery() mongo.MongoDBQuery {
 	if mode == mongodb {
 		return mongo.Create()
 	}
-	log.Fatalf("Unsupported mode: %v", mode)
+	log.Fatalf("Unsupported mode: %v, check environment variable %v", mode, envDbMode)
 	os.Exit(-1)
 	return nil
 }
 
 func main() {
 	log.Print("CF-Routing-Suite Server")
-	handleFlags()
-	log.Printf("Server mode: %v", mode)
+
+	parseFlags()
+	readEnvironment()
+
+	log.Printf("Server running on http://localhost:%s ...\n", port)
+	log.Printf("version: %v", version)
 
 	http.HandleFunc("/inc", incHandler)
 	http.HandleFunc("/reset", resetHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.HandleFunc("/", rootHandler)
 
-	log.Printf("Server running on http://localhost:%s ...\n", port)
-	log.Printf("version: %v", version)
-
-	createQuery()
-
 	err := http.ListenAndServe(fmt.Sprintf(":"+port), nil)
 	log.Fatal(err)
 }
 
-func handleFlags() {
-	simulatorPtr := flag.Bool("s", false, "run server in mongodb simulation mode")
+func readEnvironment() {
+	var ok bool
+
+	if port, ok = os.LookupEnv(envPort); !ok {
+		log.Printf("Environment variable %v not set." , envPort)
+		os.Exit(1)
+	}
+	if mode, ok = os.LookupEnv(envDbMode); !ok {
+		log.Printf("Environment variable %v not set." , envDbMode)
+		os.Exit(1)
+	}
+
+	log.Printf("Server mode: %v", mode)
+	log.Printf("Server port: %v", port)
+}
+
+func parseFlags() {
 	showVersionPtr := flag.Bool("v", false, "show version info only")
 	showHelpPtr := flag.Bool("help", false, "show help")
-	showHelp2Ptr := flag.Bool("?", false, "show help")
-	portPtr := flag.String("p", "8080", "set server port")
 
 	flag.Parse()
 
-	if *showHelpPtr || *showHelp2Ptr {
+	if *showHelpPtr {
 		flag.PrintDefaults()
 		os.Exit(0)
 	}
@@ -154,15 +180,5 @@ func handleFlags() {
 	if *showVersionPtr {
 		log.Printf("version: %v", version)
 		os.Exit(0)
-	}
-
-	if port == "" {
-		port = *portPtr
-	}
-
-	if *simulatorPtr {
-		mode = simulator
-	} else {
-		mode = mongodb
 	}
 }

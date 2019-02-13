@@ -13,7 +13,7 @@ type simulator struct {
 var query MongoDBQuery
 
 func CreateSimulator() MongoDBQuery {
-	if (query == nil) {
+	if query == nil {
 		query = &simulator{0, &sync.Mutex{}}
 	}
 
