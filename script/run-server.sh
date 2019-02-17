@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-VERSION=$(git log --format="%H" -n 1)
 USAGE="Usage: run-server.sh [s|db] [8080]"
 
 if [[ $# -eq 0 ]] ; then
@@ -14,6 +13,7 @@ case "$1" in
     *) echo $USAGE; exit 0 ;;
 esac
 
+VERSION="snapshot-$(git log --format="%H" -n 1)"
 if [[ $(git diff --stat) != '' ]]; then
   VERSION="$VERSION-dirty"
 fi
