@@ -1,7 +1,7 @@
 project_name: cf-routing-suite
 builds:
   -
-    main: cfrs-server/main.go
+    main: cfrs-server/cfrs-server.go
     binary: cfrs-server
     ldflags: -s -w -X main.version={{.Version}}
     goos:
@@ -11,7 +11,7 @@ builds:
     goarch:
     - amd64
   -
-    main: cfrs-client/main.go
+    main: cfrs-client/cfrs-client.go
     binary: cfrs-client
     ldflags: -s -w -X main.version={{.Version}}
     goos:
@@ -42,16 +42,14 @@ release:
     owner: sklevenz
     name: cf-routing-suite
 
-# brew doesn't make sense for the server, because of web resources are missing
-#brew:
-#  folder: Formula
-#  homepage: "https://github.com/sklevenz/cf-routing-suite/"
-#  description: "A suite containing servers and clients for challenging the cloud foundry routing tier."
-#  test: |
-#    system "#{bin}/cf-routing-suite/cfrs-client/cfrs-client -version"
-#  install: |
-#    bin.install "cfrs-client"
-#    bin.install "cfrs-server"
-#  github:
-#    owner: sklevenz
-#    name: hombrew-skl
+brew:
+  folder: Formula
+  homepage: "https://github.com/sklevenz/cf-routing-suite/"
+  description: "A suite containing (server) and client for challenging the cloud foundry routing tier."
+  test: |
+    system "#{bin}/cf-routing-suite/cfrs-client/cfrs-client -version"
+  install: |
+    bin.install "cfrs-client"
+  github:
+    owner: sklevenz
+    name: hombrew-skl
