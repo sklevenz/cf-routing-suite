@@ -1,0 +1,10 @@
+ ---
+applications:
+  - name: cfrs-server
+    instances: 1
+    memory: 64MB
+    host: cfrs-server-skl
+    env:
+      GO_LINKER_SYMBOL: main.version
+      GO_LINKER_VALUE: "{{VERSION}}"
+      MODE: "{{MODE}}"

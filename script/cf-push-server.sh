@@ -21,7 +21,7 @@ fi
 echo "=== mode: $MODE";
 echo "=== version: $VERSION";
 
-pushd cfrs-server
+pushd server
   mkdir -p gen
   sed -e "s/{{VERSION}}/$VERSION/" -e "s/{{MODE}}/$MODE/" manifest.yml.template > ./gen/manifest.yml
   cf push -f ./gen/manifest.yml

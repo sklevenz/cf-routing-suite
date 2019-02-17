@@ -28,6 +28,6 @@ echo "=== port: $PORT";
 echo "=== mode: $MODE";
 
 
-pushd cfrs-server
+pushd server
     go run -ldflags="-X main.version=$VERSION" ./cfrs-server.go
 popd

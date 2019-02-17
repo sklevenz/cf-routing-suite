@@ -1,8 +1,8 @@
 project_name: cf-routing-suite
 builds:
   -
-    main: cfrs-server/cfrs-server.go
-    binary: cfrs-server
+    main: server/cfrs-server.go
+    binary: server
     ldflags: -s -w -X main.version={{.Version}}
     goos:
       - linux
@@ -11,8 +11,8 @@ builds:
     goarch:
     - amd64
   -
-    main: cfrs-client/cfrs-client.go
-    binary: cfrs-client
+    main: client/cfrs-client.go
+    binary: client
     ldflags: -s -w -X main.version={{.Version}}
     goos:
     - linux
@@ -21,6 +21,7 @@ builds:
     goarch:
     - amd64
 archive:
+  wrap_in_directory: true
   format: tar.gz
   replacements:
     amd64: 64-bit
@@ -29,8 +30,8 @@ archive:
   files:
   - README.md
   - LICENSE
-  - cfrs-server/static/*
-  - cfrs-server/templates/*
+  - server/static/*
+  - server/templates/*
 
 
 checksum:
@@ -47,7 +48,7 @@ brew:
   homepage: "https://github.com/sklevenz/cf-routing-suite/"
   description: "A suite containing (server) and client for challenging the cloud foundry routing tier."
   test: |
-    system "#{bin}/cf-routing-suite/cfrs-client/cfrs-client -version"
+    system "#{bin}/cf-routing-suite/client/cfrs-client -version"
   install: |
     bin.install "cfrs-client"
   github:

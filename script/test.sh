@@ -9,6 +9,6 @@ if [ $? == 0 ]; then
   TAG_FLAG="-tags=mongodb"
 fi
 
-go test $TAG_FLAG ./cfrs-server/... $@
-go test ./cfrs-client/... $@
+go test $TAG_FLAG ./server/... $@
+go test ./client/... $@
 

@@ -1,6 +1,6 @@
 .idea
-cfrs-server/cfrs-server
-cfrs-client/cfrs-client
+server/cfrs-server
+client/cfrs-client
 dist/
-/cfrs-server/mongo/data/
+/server/mongo/data/
 gen/

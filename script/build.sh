@@ -2,17 +2,17 @@
 
 echo "=== fet ================================================"
 
-go vet ./cfrs-server/...
-go vet ./cfrs-client/...
+go vet ./server/...
+go vet ./client/...
 
 ./script/test.sh
 
 echo "=== build ==============================================="
 
-rm -f ./cfrs-server/cfrs-server
-go build -o ./cfrs-server/cfrs-server ./cfrs-server/cfrs-server.go
-./cfrs-server/cfrs-server -v
+rm -f ./server/cfrs-server
+go build -o ./server/cfrs-server ./server/cfrs-server.go
+./server/cfrs-server -v
 
-rm -f ./cfrs-server/cfrs-client
-go build -o ./cfrs-client/cfrs-client ./cfrs-client/cfrs-client.go
-./cfrs-client/cfrs-client -v
+rm -f ./server/cfrs-client
+go build -o ./client/cfrs-client ./client/cfrs-client.go
+./client/cfrs-client -v
