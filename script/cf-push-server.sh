@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=$(git log --format="%H" -n 1)
+VERSION="snapshot-$(git log --format="%H" -n 1)"
 USAGE="Usage: cf-push-server.sh [s|db]"
 
 if [[ $# -eq 0 ]] ; then
