@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 type responseDataStruct struct {
@@ -18,6 +19,7 @@ type responseDataStruct struct {
 	CfInstanceIndex string `json:"cf-instanceindex"`
 	CfInstanceId    string `json:"cf-instanceid"`
 	CfApplicationId string `json:"cf-applicationid"`
+	data            map[string]interface{}
 }
 
 const (
@@ -25,7 +27,10 @@ const (
 	mongodb   = "mongodb"
 
 	envDbMode = "MODE"
-	envPort    = "PORT"
+	envPort   = "PORT"
+
+	waitDefault = 100 * time.Millisecond
+	waitQuery   = "wait"
 )
 
 var (
@@ -69,13 +74,49 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	data := struct { // add data to the template
 		Version string
-		Mode string
+		Mode    string
 	}{version, mode}
 
 	if err := rootTemplate.ExecuteTemplate(w, "layout", data); err != nil {
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(500), 500)
 	}
+	w.Header().Set("Content-Type", "text/html")
+}
+
+func waitHandler(w http.ResponseWriter, r *http.Request) {
+	query := createQuery()
+	query.IncRequestCounter()
+	count := query.GetRequestCounter()
+	responseData := responseDataStruct{
+		count,
+		"/wait",
+		r.Header.Get("x-cf-instanceindex"),
+		r.Header.Get("x-cf-instanceid"),
+		r.Header.Get("x-cf-applicationid"),
+		nil}
+
+	if wait := r.URL.Query().Get(waitQuery); wait != "" {
+		sleep, err := time.ParseDuration(wait)
+		if err != nil {
+			log.Printf("Error in waitHandler, can't parse wait parameter value: %v, error = %v", wait, err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		time.Sleep(sleep)
+	} else {
+		time.Sleep(waitDefault)
+	}
+
+	err := json.NewEncoder(w).Encode(responseData)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Error in incHandler: %v", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	log.Printf("responseData: %v", responseData)
 }
 
 func incHandler(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +128,8 @@ func incHandler(w http.ResponseWriter, r *http.Request) {
 		"/inc",
 		r.Header.Get("x-cf-instanceindex"),
 		r.Header.Get("x-cf-instanceid"),
-		r.Header.Get("x-cf-applicationid")}
+		r.Header.Get("x-cf-applicationid"),
+		nil}
 
 	err := json.NewEncoder(w).Encode(responseData)
 	if err != nil {
@@ -108,7 +150,8 @@ func resetHandler(w http.ResponseWriter, r *http.Request) {
 		"/reset",
 		r.Header.Get("x-cf-instanceindex"),
 		r.Header.Get("x-cf-instanceid"),
-		r.Header.Get("x-cf-applicationid")}
+		r.Header.Get("x-cf-applicationid"),
+		nil}
 
 	err := json.NewEncoder(w).Encode(responseData)
 	if err != nil {
@@ -141,6 +184,7 @@ func main() {
 	log.Printf("Server running on http://localhost:%s ...\n", port)
 	log.Printf("version: %v", version)
 
+	http.HandleFunc("/wait", waitHandler)
 	http.HandleFunc("/inc", incHandler)
 	http.HandleFunc("/reset", resetHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -154,11 +198,11 @@ func readEnvironment() {
 	var ok bool
 
 	if port, ok = os.LookupEnv(envPort); !ok {
-		log.Printf("Environment variable %v not set." , envPort)
+		log.Printf("Environment variable %v not set.", envPort)
 		os.Exit(1)
 	}
 	if mode, ok = os.LookupEnv(envDbMode); !ok {
-		log.Printf("Environment variable %v not set." , envDbMode)
+		log.Printf("Environment variable %v not set.", envDbMode)
 		os.Exit(1)
 	}
 
