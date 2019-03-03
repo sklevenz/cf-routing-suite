@@ -20,8 +20,6 @@ The server is controlled by following environment variables:
 | MODE | the mode can be simulator or mongodb |
 
 
-
-
 ### db mode
 
 
@@ -32,11 +30,12 @@ The server is controlled by following environment variables:
 - ~~add version to cf push process~~
 - ~~rename server.go~~
 - ~~add go releaser~~
+- ~~add mongodb persistence local~~~
+- ~~replace flags by env only~~
+- find programming schema for request handler (EVA)
+- add mongodb persistence cf service
 - add ci
 - add blue/green deployment
-- ~~add mongodb persistence local~~~
-- add mongodb persistence cf service
-- ~~replace flags by env only~~
 
 
 ### API
@@ -54,11 +53,13 @@ Shel scripts are located in script directory. Simply call ````/script/script-nam
 | Script | Description |
 |--------|-------------|
 | ```build.sh``` | build all go binaries |
-| ```cf-push-server.sh [s|db]``` | push server to cloud foundry (s: use database simulator, db: connect to mongodb)|
+| ```cf-push-server.sh [s/db]``` | push server to cloud foundry (s: use database simulator, db: connect to mongodb)|
 | ```delete-tag.sh``` | delete a tag from github (local and remote) |
 | ```make-release.sh``` | Make a new release by [goreleaser](https://goreleaser.com), set a version tag and push release to github |
 | ```run-client.sh``` | run the client |
 | ```run-mongo.sh``` | run a mongo db for local testing |
-| ```run-server.sh [s|db] [8080]``` | run the server locally (s | use database simulator, db: connect ot mongodb
-| ```test.sh``` | run all go tests (uses local mongodb if available |
+| ```run-server.sh [s/db] [8080]``` | run the server locally (s: use database simulator, db: connect ot mongodb
+| ```test-client.sh``` | run client go tests |
+| ```test-server.sh``` | run server go tests (uses local mongodb if available) |
+| ```test-all.sh``` | run all go tests (client and server) |
 
