@@ -5,21 +5,34 @@ import (
 	"testing"
 )
 
-func TestSimulatorCreate(t *testing.T) {
-	query := CreateSimulator()
+func TestSimulatorDial(t *testing.T) {
+	query, err := Dial("simulator")
+	assert.Nil(t, err)
 	assert.NotNil(t, query)
 }
 
-func TestSimulatorGetMode(t *testing.T) {
-	query := CreateSimulator()
-	assert.Equal(t, "simulator", query.GetMode())
+func TestSimulatorReset(t *testing.T) {
+	query, err := Dial("simulator")
+	assert.Nil(t, err)
+	assert.NotNil(t, query)
+
+	result := query.ResetAll()
+
+	assert.NotNil(t, result)
+	assert.Equal(t, int64(0), result.Count)
+	assert.Nil(t, result.Error)
+	assert.NotNil(t, result.Message)
 }
 
-func TestSimulatorCounter(t *testing.T) {
-	query := CreateSimulator()
-	assert.Equal(t, uint64(0), query.GetRequestCounter())
-	query.IncRequestCounter()
-	assert.Equal(t, uint64(1), query.GetRequestCounter())
-	query.ResetRequestCounter()
-	assert.Equal(t, uint64(0), query.GetRequestCounter())
+func TestSimulatorRecordRequest(t *testing.T) {
+	query, err := Dial("simulator")
+	assert.Nil(t, err)
+	assert.NotNil(t, query)
+
+	result := query.RecordRequest(&RequestData{})
+
+	assert.NotNil(t, result)
+	assert.True(t, result.Count > int64(0))
+	assert.Nil(t, result.Error)
+	assert.NotNil(t, result.Message)
 }
