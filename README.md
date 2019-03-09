@@ -32,10 +32,9 @@ The server is controlled by following environment variables:
 - ~~add go releaser~~
 - ~~add mongodb persistence local~~~
 - ~~replace flags by env only~~
-- find programming schema for request handler (EVA)
+- ~~find programming schema for request handler (EVA)~~
 - add mongodb persistence cf service
 - add ci
-- add blue/green deployment
 
 
 ### API

@@ -13,24 +13,15 @@ import (
 	"time"
 )
 
-type responseDataStruct struct {
-	Count           uint64 `json:"count"`
-	Method          string `json:"method"`
-	CfInstanceIndex string `json:"cf-instanceindex"`
-	CfInstanceId    string `json:"cf-instanceid"`
-	CfApplicationId string `json:"cf-applicationid"`
-	data            map[string]interface{}
-}
-
 const (
-	simulator = "simulator"
-	mongodb   = "mongodb"
-
 	envDbMode = "MODE"
 	envPort   = "PORT"
 
-	waitDefault = 100 * time.Millisecond
+	waitDefault = 0 * time.Millisecond
 	waitQuery   = "wait"
+
+	tagQuery   = "tag"
+	tagDefault = "default"
 )
 
 var (
@@ -39,6 +30,24 @@ var (
 	port    string
 	mode    string
 )
+
+func main() {
+	log.Print("CF-Routing-Suite Server")
+
+	parseFlags()
+	readEnvironment()
+
+	log.Printf("Server running on http://localhost:%s ...\n", port)
+	log.Printf("version: %v", version)
+
+	http.HandleFunc("/api/probe", probeHandler)
+	http.HandleFunc("/api/reset", resetHandler)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	http.HandleFunc("/", rootHandler)
+
+	err := http.ListenAndServe(fmt.Sprintf(":"+port), nil)
+	log.Fatal(err)
+}
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	lp := filepath.Join("template", "layout.html")
@@ -66,7 +75,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	rootTemplate, err := template.ParseFiles(lp, fp)
 	if err != nil {
 		// Log the detailed error
-		log.Println(err.Error())
+		log.Println(err)
 		// Return a generic "Internal Server Error" message
 		http.Error(w, http.StatusText(500), 500)
 		return
@@ -84,114 +93,79 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 }
 
-func waitHandler(w http.ResponseWriter, r *http.Request) {
-	query := createQuery()
-	query.IncRequestCounter()
-	count := query.GetRequestCounter()
-	responseData := responseDataStruct{
-		count,
-		"/wait",
-		r.Header.Get("x-cf-instanceindex"),
-		r.Header.Get("x-cf-instanceid"),
-		r.Header.Get("x-cf-applicationid"),
-		nil}
-
-	if wait := r.URL.Query().Get(waitQuery); wait != "" {
-		sleep, err := time.ParseDuration(wait)
+func probeHandler(w http.ResponseWriter, r *http.Request) {
+	if waitValue := r.URL.Query().Get(waitQuery); waitValue != "" {
+		wait, err := time.ParseDuration(waitValue)
 		if err != nil {
-			log.Printf("Error in waitHandler, can't parse wait parameter value: %v, error = %v", wait, err)
-			w.WriteHeader(http.StatusBadRequest)
+			errorHandler(w, r, fmt.Sprintf("Time format error: %v", err), http.StatusInternalServerError)
 			return
 		}
-		time.Sleep(sleep)
+		time.Sleep(wait)
 	} else {
 		time.Sleep(waitDefault)
 	}
 
-	err := json.NewEncoder(w).Encode(responseData)
+	tag := r.URL.Query().Get(tagQuery)
+	if tag == "" {
+		tag = tagDefault
+	}
+
+	query, err := mongo.Dial(mode)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("Error in incHandler: %v", err)
+		errorHandler(w, r, fmt.Sprintf("MongoDB query error: %v", err), http.StatusInternalServerError)
 		return
 	}
 
+	requestData := mongo.RequestData{
+		Method:          r.Method,
+		Remote:          r.RemoteAddr,
+		Timestamp:       time.Now(),
+		Url:             r.URL.String(),
+		XB3ParentSpanId: r.Header.Get("x-b3-parentspanid"),
+		XB3SpanId:       r.Header.Get("x-b3-spanid"),
+		XB3TraceId:      r.Header.Get("x-b3-traceid"),
+		XForwardedFor:   r.Header.Get("x-forwarded-for"),
+		Tag:             tag,
+	}
+
+	data := query.RecordRequest(&requestData)
+
 	w.Header().Set("Content-Type", "application/json")
-	log.Printf("responseData: %v", responseData)
-}
-
-func incHandler(w http.ResponseWriter, r *http.Request) {
-	query := createQuery()
-	query.IncRequestCounter()
-	count := query.GetRequestCounter()
-	responseData := responseDataStruct{
-		count,
-		"/inc",
-		r.Header.Get("x-cf-instanceindex"),
-		r.Header.Get("x-cf-instanceid"),
-		r.Header.Get("x-cf-applicationid"),
-		nil}
-
-	err := json.NewEncoder(w).Encode(responseData)
+	err = json.NewEncoder(w).Encode(data)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("Error in incHandler: %v", err)
+		errorHandler(w, r, fmt.Sprintf("Json format error: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	log.Printf("responseData: %v", responseData)
+	log.Printf("responseData: %v", data)
 }
 
 func resetHandler(w http.ResponseWriter, r *http.Request) {
-	query := createQuery()
-	query.ResetRequestCounter()
-	responseData := responseDataStruct{
-		0,
-		"/reset",
-		r.Header.Get("x-cf-instanceindex"),
-		r.Header.Get("x-cf-instanceid"),
-		r.Header.Get("x-cf-applicationid"),
-		nil}
-
-	err := json.NewEncoder(w).Encode(responseData)
+	query, err := mongo.Dial(mode)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("Error in resetHandler: %v", err)
+		errorHandler(w, r, fmt.Sprintf("MongoDB query error: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	data := query.ResetAll()
+
+	js, err := json.Marshal(data)
+	if err != nil {
+		errorHandler(w, r, fmt.Sprintf("Json format error: %v", err), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	log.Printf("responseData: %v", responseData)
+	w.Write(js)
+
+	log.Printf("responseData: %v", data)
 }
 
-func createQuery() mongo.MongoDBQuery {
-	if mode == simulator {
-		return mongo.CreateSimulator()
-	}
-	if mode == mongodb {
-		return mongo.Create()
-	}
-	log.Fatalf("Unsupported mode: %v, check environment variable %v", mode, envDbMode)
-	os.Exit(-1)
-	return nil
-}
+func errorHandler(w http.ResponseWriter, r *http.Request, msg string, status int) {
+	log.Printf("Internal Server Error 500: %v", msg)
+	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, "Internal Server Error 500 - %v", msg)
 
-func main() {
-	log.Print("CF-Routing-Suite Server")
-
-	parseFlags()
-	readEnvironment()
-
-	log.Printf("Server running on http://localhost:%s ...\n", port)
-	log.Printf("version: %v", version)
-
-	http.HandleFunc("/wait", waitHandler)
-	http.HandleFunc("/inc", incHandler)
-	http.HandleFunc("/reset", resetHandler)
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.HandleFunc("/", rootHandler)
-
-	err := http.ListenAndServe(fmt.Sprintf(":"+port), nil)
-	log.Fatal(err)
 }
 
 func readEnvironment() {

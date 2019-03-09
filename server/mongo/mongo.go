@@ -2,58 +2,121 @@ package mongo
 
 import (
 	"context"
+	"fmt"
+	"github.com/mongodb/mongo-go-driver/bson"
+	"log"
+	"time"
+
 	"github.com/mongodb/mongo-go-driver/mongo"
 	"github.com/mongodb/mongo-go-driver/mongo/readpref"
-	"log"
-	"os"
-	"time"
+)
+
+const (
+	database = "cfrsdb"
 )
 
 type MongoDBQuery interface {
-	GetMode() string
-	GetRequestCounter() uint64
-	IncRequestCounter()
-	ResetRequestCounter()
+	RecordRequest(requestData *RequestData) ResultData
+	ResetAll() ResultData
 }
 
 type mongodb struct {
 	client *mongo.Client
 }
 
-func (db *mongodb) GetMode() string {
-	return "mongodb"
+type ResultData struct {
+	Error       error        `json:"error"`
+	Count       int64        `json:"count"`
+	Message string  `json:"message"`
+	MongoData   *MongoData   `json:"mongo"`
+	RequestData *RequestData `json:"request-data"`
 }
 
-func (db *mongodb) IncRequestCounter() {
+type RequestData struct {
+	Url             string    `json:"url"`
+	Method          string    `json:"method"`
+	Remote          string    `json:"remote"`
+	Timestamp       time.Time `json:"timestamp"`
+	XForwardedFor   string    `json:"x-forwarded-for"`
+	XB3TraceId      string    `json:"x-b3-traceid"`
+	XB3SpanId       string    `json:"x-b3-spanid"`
+	XB3ParentSpanId string    `json:"x_b3_parentspanid"`
+	Tag             string    `json:"tag"`
 }
 
-func (db *mongodb) GetRequestCounter() uint64 {
-	return uint64(1)
+type MongoData struct {
+	InsertId        interface{}    `json:"insert-id"`
 }
 
-func (db *mongodb) ResetRequestCounter() {
-}
 
-func Create() MongoDBQuery {
-	var err error
+func (db *mongodb) ResetAll() ResultData {
+	mongodb := db.client.Database(database)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, "mongodb://localhost:27017")
-	if err != nil {
-		log.Printf("Error: %v", err)
+	err := mongodb.Drop(ctx)
+
+	return ResultData{
+		err,
+		0,
+		"database dropped",
+		nil,
+		nil,
+	}
+}
+
+func (db *mongodb) RecordRequest(requestData *RequestData) ResultData {
+	collection := db.client.Database(database).Collection(requestData.Tag)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	res, err := collection.InsertOne(ctx, requestData)
+	var count = int64(-1)
+	if err == nil {
+		count, err = collection.Count(ctx, bson.M{})
 	}
 
-	err = client.Ping(ctx, readpref.Primary())
-	if err != nil {
-		log.Printf("Can't ping mongodb. Error: %v", err)
-		os.Exit(1)
+	return ResultData{
+		err,
+		count,
+		"request recorded",
+		&MongoData{res.InsertedID},
+		requestData,
 	}
+}
 
-	q := mongodb{client: client}
-	query := &q
-	log.Printf("MongoDB connected: %v", client.ConnectionString())
+func Dial(mode string) (MongoDBQuery, error) {
+	if mode == "mongodb" {
+		var err error
 
-	return query
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		client, err := mongo.Connect(ctx, "mongodb://localhost:27017")
+		if err != nil {
+			log.Fatalf("Connect error to mongodb://localhost:27017: %v", err)
+			return nil, err
+		}
+
+		err = client.Ping(ctx, readpref.Primary())
+		if err != nil {
+			log.Printf("Can't ping mongodb. Error: %v", err)
+			return nil, err
+		}
+
+		query := &mongodb{client: client}
+		log.Printf("MongoDB connected: %v", client.ConnectionString())
+
+		return query, nil
+	} else if mode == "simulator" {
+		query := &simulator{}
+		log.Printf("MongoDB connected: %v", mode)
+		return query, nil
+	} else {
+		err := fmt.Errorf("Unsupported mode: %v, expected: [simulator|mongodb]", mode)
+		log.Printf(err.Error())
+		return nil, err
+	}
 }
