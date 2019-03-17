@@ -50,14 +50,14 @@ func main() {
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	lp := filepath.Join("template", "layout.html")
-	fp := filepath.Join("template", filepath.Clean(r.URL.Path))
+	lp := filepath.Join("static/html", "layout.html")
+	fp := filepath.Join("static/html", filepath.Clean(r.URL.Path))
 
-	if fp == "template" {
-		fp = "template/index.html"
+	if fp == "static/html" {
+		fp = "static/html/index.html"
 	}
 
-	// Return a 404 if the template doesn't exist
+	// Return a 404 if the html doesn't exist
 	info, err := os.Stat(fp)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -81,7 +81,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := struct { // add data to the template
+	data := struct { // add data to the html
 		Version string
 		Mode    string
 	}{version, mode}
