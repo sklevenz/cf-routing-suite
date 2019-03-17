@@ -1,8 +1,8 @@
 project_name: cf-routing-suite
 builds:
   -
-    main: server/cfrs-server.go
-    binary: server
+    main: ./server/.
+    binary: cfrs-server
     ldflags: -s -w -X main.version={{.Version}}
     goos:
       - linux
@@ -11,8 +11,8 @@ builds:
     goarch:
     - amd64
   -
-    main: client/cfrs-client.go
-    binary: client
+    main: ./client/.
+    binary: cfrs-client
     ldflags: -s -w -X main.version={{.Version}}
     goos:
     - linux
@@ -31,7 +31,8 @@ archive:
   - README.md
   - LICENSE
   - server/static/*
-  - server/templates/*
+  - server/static/html/*
+  - server/static/stylesheets/*
 
 
 checksum:

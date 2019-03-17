@@ -4,3 +4,4 @@ client/cfrs-client
 dist/
 /server/mongo/data/
 gen/
+.DS_Store
