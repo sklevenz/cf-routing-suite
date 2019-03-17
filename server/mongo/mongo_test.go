@@ -11,14 +11,12 @@ import (
 )
 
 func TestDial(t *testing.T) {
-	query, err := Dial("mongodb")
-	assert.Nil(t, err)
+	query := Dial("mongodb")
 	assert.NotNil(t, query)
 }
 
 func TestRecordRequest(t *testing.T) {
-	query, err := Dial("mongodb")
-	assert.Nil(t, err)
+	query := Dial("mongodb")
 	assert.NotNil(t, query)
 
 	r, err := http.NewRequest("GET", "/test", nil)
@@ -43,8 +41,7 @@ func TestRecordRequest(t *testing.T) {
 }
 
 func TestResetRequest(t *testing.T) {
-	query, err := Dial("mongodb")
-	assert.Nil(t, err)
+	query := Dial("mongodb")
 	assert.NotNil(t, query)
 
 	result := query.ResetAll()

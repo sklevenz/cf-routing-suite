@@ -29,5 +29,6 @@ echo "=== mode: $MODE";
 
 
 pushd server
-    go run -ldflags="-X main.version=$VERSION" ./cfrs-server.go
+    go run -ldflags="-X main.version=$VERSION" ./
 popd
+
