@@ -50,6 +50,8 @@ func main() {
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
+	defer errorHandler(w, r)
+
 	lp := filepath.Join("static/html", "layout.html")
 	fp := filepath.Join("static/html", filepath.Clean(r.URL.Path))
 
@@ -61,24 +63,21 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	info, err := os.Stat(fp)
 	if err != nil {
 		if os.IsNotExist(err) {
-			http.NotFound(w, r)
-			return
+			err := newHttpError("resource not found", http.StatusNotFound)
+			panic(err)
 		}
 	}
 
 	// Return a 404 if the request is for a directory
 	if info.IsDir() {
-		http.NotFound(w, r)
-		return
+		err := newHttpError("resource not found", http.StatusNotFound)
+		panic(err)
 	}
 
 	rootTemplate, err := template.ParseFiles(lp, fp)
 	if err != nil {
-		// Log the detailed error
-		log.Println(err)
-		// Return a generic "Internal Server Error" message
-		http.Error(w, http.StatusText(500), 500)
-		return
+		err := newHttpError(fmt.Sprintf("Template parsering error - %v", err), http.StatusInternalServerError)
+		panic(err)
 	}
 
 	data := struct { // add data to the html
@@ -87,18 +86,20 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}{version, mode}
 
 	if err := rootTemplate.ExecuteTemplate(w, "layout", data); err != nil {
-		log.Println(err.Error())
-		http.Error(w, http.StatusText(500), 500)
+		err := newHttpError(fmt.Sprintf("Template exeution error - %v", err), http.StatusInternalServerError)
+		panic(err)
 	}
 	w.Header().Set("Content-Type", "text/html")
 }
 
 func probeHandler(w http.ResponseWriter, r *http.Request) {
+	defer errorHandler(w, r)
+
 	if waitValue := r.URL.Query().Get(waitQuery); waitValue != "" {
 		wait, err := time.ParseDuration(waitValue)
 		if err != nil {
-			errorHandler(w, r, fmt.Sprintf("Time format error: %v", err), http.StatusInternalServerError)
-			return
+			err := newHttpError(fmt.Sprintf("Error in query parameter %v - %v", waitQuery, err), http.StatusBadRequest)
+			panic(err)
 		}
 		time.Sleep(wait)
 	} else {
@@ -108,12 +109,6 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 	tag := r.URL.Query().Get(tagQuery)
 	if tag == "" {
 		tag = tagDefault
-	}
-
-	query, err := mongo.Dial(mode)
-	if err != nil {
-		errorHandler(w, r, fmt.Sprintf("MongoDB query error: %v", err), http.StatusInternalServerError)
-		return
 	}
 
 	requestData := mongo.RequestData{
@@ -127,45 +122,52 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 		XForwardedFor:   r.Header.Get("x-forwarded-for"),
 		Tag:             tag,
 	}
+	data := mongo.Dial(mode).RecordRequest(&requestData)
 
-	data := query.RecordRequest(&requestData)
-
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(data)
+	js, err := json.Marshal(data)
 	if err != nil {
-		errorHandler(w, r, fmt.Sprintf("Json format error: %v", err), http.StatusInternalServerError)
-		return
+		err := newHttpError(fmt.Sprintf("Json format error: %v", err), http.StatusInternalServerError)
+		panic(err)
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 	log.Printf("responseData: %v", data)
 }
 
 func resetHandler(w http.ResponseWriter, r *http.Request) {
-	query, err := mongo.Dial(mode)
-	if err != nil {
-		errorHandler(w, r, fmt.Sprintf("MongoDB query error: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	data := query.ResetAll()
+	defer errorHandler(w, r)
+	data := mongo.Dial(mode).ResetAll()
 
 	js, err := json.Marshal(data)
 	if err != nil {
-		errorHandler(w, r, fmt.Sprintf("Json format error: %v", err), http.StatusInternalServerError)
-		return
+		err := newHttpError(fmt.Sprintf("Json format error: %v", err), http.StatusInternalServerError)
+		panic(err)
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(js)
-
 	log.Printf("responseData: %v", data)
 }
 
-func errorHandler(w http.ResponseWriter, r *http.Request, msg string, status int) {
-	log.Printf("Internal Server Error 500: %v", msg)
-	w.WriteHeader(status)
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, "Internal Server Error 500 - %v", msg)
+func errorHandler(w http.ResponseWriter, r *http.Request) {
+	err := recover()
 
+	if err != nil {
+		w.Header().Set("Content-Type", "text/html")
+
+		switch err.(type) {
+		case *httpError:
+			if httpError, ok := err.(httpError); ok {
+				w.WriteHeader(httpError.status)
+			}
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		log.Printf("%v", err)
+		fmt.Fprintf(w, "%v", err)
+	}
 }
 
 func readEnvironment() {

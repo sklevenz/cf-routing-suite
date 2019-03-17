@@ -6,14 +6,20 @@ import (
 )
 
 func TestSimulatorDial(t *testing.T) {
-	query, err := Dial("simulator")
-	assert.Nil(t, err)
+	query := Dial("simulator")
 	assert.NotNil(t, query)
 }
 
+func TestSimulatorDialWrongMode(t *testing.T) {
+	defer func () {
+		assert.NotNil(t, recover())
+	}()
+	Dial("xxx")
+}
+
+
 func TestSimulatorReset(t *testing.T) {
-	query, err := Dial("simulator")
-	assert.Nil(t, err)
+	query := Dial("simulator")
 	assert.NotNil(t, query)
 
 	result := query.ResetAll()
@@ -25,8 +31,7 @@ func TestSimulatorReset(t *testing.T) {
 }
 
 func TestSimulatorRecordRequest(t *testing.T) {
-	query, err := Dial("simulator")
-	assert.Nil(t, err)
+	query := Dial("simulator")
 	assert.NotNil(t, query)
 
 	result := query.RecordRequest(&RequestData{})

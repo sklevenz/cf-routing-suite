@@ -27,7 +27,7 @@ type mongodb struct {
 type ResultData struct {
 	Error       error        `json:"error"`
 	Count       int64        `json:"count"`
-	Message string  `json:"message"`
+	Message     string       `json:"message"`
 	MongoData   *MongoData   `json:"mongo"`
 	RequestData *RequestData `json:"request-data"`
 }
@@ -45,9 +45,8 @@ type RequestData struct {
 }
 
 type MongoData struct {
-	InsertId        interface{}    `json:"insert-id"`
+	InsertId interface{} `json:"insert-id"`
 }
-
 
 func (db *mongodb) ResetAll() ResultData {
 	mongodb := db.client.Database(database)
@@ -56,6 +55,9 @@ func (db *mongodb) ResetAll() ResultData {
 	defer cancel()
 
 	err := mongodb.Drop(ctx)
+	if err != nil {
+		log.Printf("Mongodb drop error %v", err)
+	}
 
 	return ResultData{
 		err,
@@ -73,9 +75,14 @@ func (db *mongodb) RecordRequest(requestData *RequestData) ResultData {
 	defer cancel()
 
 	res, err := collection.InsertOne(ctx, requestData)
+	if err != nil {
+		log.Printf("Mongodb insert one error %v", err)
+	}
+
 	var count = int64(-1)
-	if err == nil {
-		count, err = collection.Count(ctx, bson.M{})
+	count, err = collection.Count(ctx, bson.M{})
+	if err != nil {
+		log.Printf("Mongodb count error %v", err)
 	}
 
 	return ResultData{
@@ -87,36 +94,32 @@ func (db *mongodb) RecordRequest(requestData *RequestData) ResultData {
 	}
 }
 
-func Dial(mode string) (MongoDBQuery, error) {
+func Dial(mode string) (query MongoDBQuery) {
 	if mode == "mongodb" {
-		var err error
 
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
 		client, err := mongo.Connect(ctx, "mongodb://localhost:27017")
 		if err != nil {
-			log.Fatalf("Connect error to mongodb://localhost:27017: %v", err)
-			return nil, err
+			log.Panicf("Connect error to mongodb://localhost:27017: %v", err)
 		}
 
 		err = client.Ping(ctx, readpref.Primary())
 		if err != nil {
-			log.Printf("Can't ping mongodb. Error: %v", err)
-			return nil, err
+			log.Panicf("Can't ping mongodb. Error: %v", err)
 		}
 
-		query := &mongodb{client: client}
+		query = &mongodb{client: client}
 		log.Printf("MongoDB connected: %v", client.ConnectionString())
-
-		return query, nil
+		return query
 	} else if mode == "simulator" {
-		query := &simulator{}
+		query = &simulator{}
 		log.Printf("MongoDB connected: %v", mode)
-		return query, nil
+		return query
 	} else {
 		err := fmt.Errorf("Unsupported mode: %v, expected: [simulator|mongodb]", mode)
-		log.Printf(err.Error())
-		return nil, err
+		log.Panicf(err.Error())
+		return nil
 	}
 }
