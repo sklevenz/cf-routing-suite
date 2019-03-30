@@ -50,8 +50,10 @@ brew:
   description: "A suite containing (server) and client for challenging the cloud foundry routing tier."
   test: |
     system "#{bin}/cf-routing-suite/client/cfrs-client -version"
+    system "#{bin}/cf-routing-suite/server/cfrs-server -version"
   install: |
     bin.install "cfrs-client"
+    bin.install "cfrs-server"
   github:
     owner: sklevenz
     name: hombrew-skl
